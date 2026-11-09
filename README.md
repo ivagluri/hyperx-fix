@@ -24,12 +24,16 @@ the Linux host switched it to report mode, it kept working on the Mac until a fu
 
 ## Fix
 
-`hyperx-fix` watches IOKit for the keyboard connecting (plugging in, KVM switch, wake from sleep)
-and sends this request to interfaces 0 and 1:
+`hyperx-fix` checks the keyboard every 2 seconds with `GET_PROTOCOL`. If it finds boot protocol,
+it sends this request (the keyboard keeps one protocol setting for both interfaces):
 
 ```
-21 0B 01 00 0i 00 00 00   # host→interface class request, SET_PROTOCOL, value 1 = report, wIndex = i
+21 0B 01 00 00 00 00 00   # host→interface class request, SET_PROTOCOL, value 1 = report, wIndex = 0
 ```
+
+It checks repeatedly instead of only on connect because on macOS 26 the DriverKit HID driver
+(`AppleUserHIDDrivers`) can put the keyboard back into boot protocol after it is attached, with
+no reconnect event. Each correction is logged with a timestamp.
 
 It runs as a per-user LaunchAgent. No root access is needed.
 
